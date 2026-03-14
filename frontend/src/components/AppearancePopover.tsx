@@ -1,25 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { themes, themeNames } from '@/lib/themes';
-import { fonts, fontNames, FONT_CATEGORIES, loadFont, type FontName } from '@/lib/fonts';
+import { fonts, fontNames, FONT_CATEGORIES, loadFont, applyFont, type FontName } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 
 function hslToCSS(hsl: string): string {
   return `hsl(${hsl})`;
 }
 
-// Preload a font when hovering over it
-function handleFontHover(name: FontName) {
-  loadFont(name);
-}
-
 export function AppearancePopover() {
   const { themeName, setTheme, fontName, setFont, hasOpenedAppearance, markAppearanceOpened } = useThemeStore();
   const [open, setOpen] = useState(false);
   const currentTheme = themes[themeName];
+  const previewFontRef = useRef<FontName | null>(null);
+
+  // Preload ALL fonts when popover opens
+  useEffect(() => {
+    if (open) {
+      fontNames.forEach((name) => loadFont(name));
+    }
+  }, [open]);
+
+  // Revert font when popover closes
+  useEffect(() => {
+    if (!open && previewFontRef.current) {
+      applyFont(fontName);
+      previewFontRef.current = null;
+    }
+  }, [open, fontName]);
+
+  const handleFontHover = useCallback((name: FontName) => {
+    previewFontRef.current = name;
+    const font = fonts[name];
+    if (font) {
+      document.documentElement.style.setProperty('--font-sans', font.family);
+    }
+  }, []);
+
+  const handleFontListLeave = useCallback(() => {
+    previewFontRef.current = null;
+    applyFont(fontName);
+  }, [fontName]);
+
+  const handleFontClick = useCallback((name: FontName) => {
+    previewFontRef.current = null;
+    setFont(name);
+  }, [setFont]);
 
   // Group fonts by category
   const fontsByCategory = fontNames.reduce((acc, name) => {
@@ -104,7 +133,10 @@ export function AppearancePopover() {
           <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-3">
             Font
           </h4>
-          <div className="max-h-[240px] overflow-y-auto scrollbar-thin space-y-3 -mr-2 pr-2">
+          <div
+            className="max-h-[240px] overflow-y-auto scrollbar-thin space-y-3 -mr-2 pr-2"
+            onMouseLeave={handleFontListLeave}
+          >
             {categoryOrder.map((category) => {
               const fontsInCategory = fontsByCategory[category];
               if (!fontsInCategory || fontsInCategory.length === 0) return null;
@@ -121,7 +153,7 @@ export function AppearancePopover() {
                       return (
                         <button
                           key={name}
-                          onClick={() => setFont(name)}
+                          onClick={() => handleFontClick(name)}
                           onMouseEnter={() => handleFontHover(name)}
                           className={cn(
                             "w-full text-left px-2 py-1.5 rounded-md text-sm transition-all duration-150",
