@@ -15,7 +15,7 @@ navigate to http://localhost:3001, login, go to settings and add the private ssh
 i would not recommend putting this in the internet, but each to their own. in germany we say "ist mir wurst"
 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/e51c3078-56e4-49e1-8d7c-f3fd8372560f" width="100%" autoplay loop muted playsinline></video>
+  <video src="https://github.com/user-attachments/assets/8d2619c3-7086-468c-98e4-259e11556967" width="100%" autoplay loop muted playsinline></video>
 </div>
 
 ## Features
