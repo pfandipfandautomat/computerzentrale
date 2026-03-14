@@ -5,6 +5,10 @@
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=white)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<div align="center">
+  <img src="banner.png" alt="Computerzentrale" width="100%" />
+</div>
+
 a beautiful webapp for visualizing, managing and monitoring computers. does everything via ssh, so kinda agentless. built-in terminal everywhere. made to flex to ur wife with dark mode only. great starting point if you plan a computer operation of any kind, works and looks good. very stable. trust the hatsune miku cursor guy.
 
 
