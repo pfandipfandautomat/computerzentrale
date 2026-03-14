@@ -1,0 +1,55 @@
+{
+  "name": "computerzentrale-backend",
+  "version": "1.0.0",
+  "description": "Personal infrastructure monitoring webapp backend",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "influxdb:setup": "tsx scripts/setup-influxdb.ts"
+  },
+  "keywords": [
+    "monitoring",
+    "infrastructure",
+    "express",
+    "typescript"
+  ],
+  "author": "Computerzentrale",
+  "license": "MIT",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.35.0",
+    "@influxdata/influxdb-client-apis": "^1.35.0",
+    "better-sqlite3": "^12.6.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.44.0",
+    "express": "^4.18.2",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.3",
+    "node-cron": "^3.0.3",
+    "ping": "^0.4.4",
+    "ssh2": "^1.15.0",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.11.19",
+    "@types/node-cron": "^3.0.11",
+    "@types/ssh2": "^1.15.0",
+    "@types/uuid": "^9.0.8",
+    "@types/ws": "^8.5.10",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,59 @@
+services:
+  computerzentrale:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_PATH=/app/data/computerzentrale.db
+      - ENCRYPTION_SECRET=${ENCRYPTION_SECRET:-change-this-to-a-secure-random-string-at-least-32-chars}
+      - APP_PASSWORD=${APP_PASSWORD:-}
+      - REDIS_URL=redis://redis:6379
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=computerzentrale
+      - INFLUXDB_BUCKET=ping_metrics
+    depends_on:
+      redis:
+        condition: service_started
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - "127.0.0.1:8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD:-computerzentrale123}
+      - DOCKER_INFLUXDB_INIT_ORG=computerzentrale
+      - DOCKER_INFLUXDB_INIT_BUCKET=ping_metrics
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  influxdb-data:
+  influxdb-config:

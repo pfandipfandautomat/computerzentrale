@@ -1,0 +1,286 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark elegant theme as default */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    
+    --card: 224 71% 6%;
+    --card-foreground: 213 31% 91%;
+    
+    --popover: 224 71% 6%;
+    --popover-foreground: 213 31% 91%;
+    
+    --primary: 210 100% 52%;
+    --primary-foreground: 222 47% 11%;
+    
+    --secondary: 222 47% 14%;
+    --secondary-foreground: 213 31% 91%;
+    
+    --muted: 223 47% 11%;
+    --muted-foreground: 215 20% 55%;
+    
+    --accent: 216 34% 17%;
+    --accent-foreground: 213 31% 91%;
+    
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 210 100% 52%;
+    
+    --radius: 0.5rem;
+    
+    /* Custom colors for status indicators */
+    --status-online: 142 76% 45%;
+    --status-offline: 0 84% 55%;
+    --status-unknown: 220 13% 46%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    --font-sans: 'Jost';
+    @apply antialiased;
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans, 'Jost'), system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Elegant scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+  
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .glow {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+  }
+  
+  .glow-sm {
+    box-shadow: 0 0 10px -3px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Thin styled scrollbar for sidebars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+  
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* React Flow dark theme overrides */
+.react-flow__controls {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden !important;
+}
+
+.react-flow__controls-button {
+  background: hsl(var(--card)) !important;
+  border: none !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 6px !important;
+}
+
+.react-flow__controls-button:hover {
+  background: hsl(var(--accent)) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button svg {
+  fill: hsl(var(--foreground)) !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
+
+.react-flow__controls-button svg path {
+  fill: hsl(var(--foreground)) !important;
+}
+
+/* MiniMap dark theme */
+.react-flow__minimap {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__minimap-mask {
+  fill: hsl(var(--background)) !important;
+  opacity: 0.85 !important;
+}
+
+/* Attribution */
+.react-flow__attribution {
+  background: transparent !important;
+}
+
+.react-flow__attribution a {
+  color: hsl(215 20% 55%) !important;
+}
+
+/* Panel (contains controls) */
+.react-flow__panel {
+  margin: 10px !important;
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: hsla(210, 100%, 52%, 0.1) !important;
+  border: 1px solid hsla(210, 100%, 52%, 0.5) !important;
+}
+
+/* Handle styling - default styles, can be overridden by component styles */
+.react-flow__handle {
+  background: hsl(210 100% 52%);
+  border: 2px solid hsl(224 71% 4%);
+}
+
+.react-flow__handle:hover {
+  background: hsl(210 100% 60%);
+  box-shadow: 0 0 8px hsla(210, 100%, 52%, 0.5);
+}
+
+/* Background */
+.react-flow__background {
+  background-color: hsl(224 71% 4%) !important;
+}
+
+/* Tremor Charts Dark Mode Styling */
+.tremor-AreaChart-root,
+.tremor-BarChart-root,
+.tremor-LineChart-root {
+  --tremor-background-subtle: hsl(224 71% 6%);
+  --tremor-background-default: hsl(224 71% 4%);
+  --tremor-border-default: hsl(216 34% 17%);
+  --tremor-content-subtle: hsl(215 20% 55%);
+  --tremor-content-default: hsl(213 31% 81%);
+  --tremor-content-emphasis: hsl(213 31% 91%);
+}
+
+/* Chart text colors */
+.recharts-cartesian-axis-tick-value {
+  fill: hsl(215 20% 55%) !important;
+  font-size: 11px !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: hsl(216 34% 17%) !important;
+  stroke-opacity: 0.5 !important;
+}
+
+/* Tooltip styling */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(224 71% 8%) !important;
+  border: 1px solid hsl(216 34% 20%) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label {
+  color: hsl(213 31% 91%) !important;
+  font-weight: 500 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item {
+  color: hsl(213 31% 81%) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-value {
+  color: hsl(213 31% 91%) !important;
+  font-weight: 600 !important;
+}
+
+/* Legend styling */
+.recharts-legend-wrapper {
+  color: hsl(213 31% 81%) !important;
+}
+
+.recharts-legend-item-text {
+  color: hsl(213 31% 81%) !important;
+}
+
+/* Cursor line */
+.recharts-tooltip-cursor {
+  stroke: hsl(210 100% 52%) !important;
+  stroke-opacity: 0.3 !important;
+}
+
+/* Area chart gradient enhancement */
+.recharts-area-area {
+  fill-opacity: 0.15 !important;
+}
+
+/* Bar chart styling */
+.recharts-bar-rectangle {
+  rx: 4;
+  ry: 4;
+}

@@ -1,0 +1,1 @@
+ALTER TABLE nodes ADD COLUMN telegram_alerts INTEGER NOT NULL DEFAULT 0;
