@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS edges (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS settings (
   id TEXT PRIMARY KEY,
-  ping_interval INTEGER NOT NULL DEFAULT 60,
+  ping_interval INTEGER NOT NULL DEFAULT 10,
   enabled INTEGER NOT NULL DEFAULT 1,
   ssh_key TEXT
 );

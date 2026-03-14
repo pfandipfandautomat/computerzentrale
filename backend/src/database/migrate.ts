@@ -23,7 +23,7 @@ export async function runMigrations(closeConnection = false) {
       sqlite.prepare(`
         INSERT INTO settings (id, ping_interval, enabled)
         VALUES (?, ?, ?)
-      `).run('default', 60, 1);
+      `).run('default', 10, 1);
       console.log('Default settings created.');
     }
     
