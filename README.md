@@ -8,7 +8,7 @@
 a beautiful webapp for visualizing, managing and monitoring computers. does everything via ssh, so kinda agentless. built-in terminal everywhere. made to flex to ur wife with dark mode only. great starting point if you plan a computer operation of any kind, works and looks good. very stable. trust the hatsune miku cursor guy.
 
 
-clone the repo, execute ./scripts/setup.sh, docker-compose up -d and you are good to go.
+clone the repo, execute `./scripts/setup.sh`, `docker-compose up -d` and you are good to go.
 
 navigate to http://localhost:3001, login, go to settings and add the private ssh key you want the app to connect with. start adding nodes.
 
