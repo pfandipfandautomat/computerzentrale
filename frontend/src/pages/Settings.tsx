@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
+  Github,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -456,6 +457,18 @@ function SettingsSidebar({
       </SidebarNav>
       
       <SidebarDivider />
+
+      <div className="mt-auto px-3 py-3">
+        <a
+          href="https://github.com/pfandipfandautomat/computerzentrale"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full text-left px-3 py-2.5 rounded-lg border border-transparent transition-all duration-150 hover:bg-secondary/80 hover:border-border flex items-center gap-2.5 text-foreground/80 hover:text-foreground"
+        >
+          <Github className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">GitHub</span>
+        </a>
+      </div>
     </Sidebar>
   );
 }
