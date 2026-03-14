@@ -9,6 +9,9 @@
   <img src="banner.png" alt="Computerzentrale" width="100%" />
 </div>
 
+[Live Demo](https://computerzentrale.internetgulasch.de)
+
+
 a beautiful webapp for visualizing, managing and monitoring computers. does everything via ssh, so kinda agentless. built-in terminal everywhere. made to flex to ur wife with dark mode only. great starting point if you plan a computer operation of any kind, works and looks good. very stable. trust the hatsune miku cursor guy.
 
 
@@ -18,9 +21,6 @@ navigate to http://localhost:3001, login, go to settings and add the private ssh
 
 i would not recommend putting this in the internet, but each to their own. in germany we say "ist mir wurst"
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/8d2619c3-7086-468c-98e4-259e11556967" width="100%" autoplay loop muted playsinline></video>
-</div>
 
 ## Features
 
