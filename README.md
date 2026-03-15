@@ -66,8 +66,8 @@ i would not recommend putting this in the internet, but each to their own. in ge
 ### Setup
 
 ```bash
-git clone https://github.com/Construct-OS/privatzentrale.git
-cd privatzentrale
+git clone https://github.com/pfandipfandautomat/computerzentrale.git
+cd computerzentrale
 
 # Generate secrets and configure environment
 ./scripts/setup.sh
@@ -134,7 +134,7 @@ Both ping results and server metrics are pushed via WebSocket — no polling for
 ### Project Structure
 
 ```
-privatzentrale/
+computerzentrale/
 ├── frontend/                 # React + Vite + TypeScript
 │   └── src/
 │       ├── components/       # UI components (Canvas, Sidebar, Modals, etc.)
