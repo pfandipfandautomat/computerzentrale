@@ -262,7 +262,6 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
               containers={containers}
               proxyConfigs={proxyConfigs}
               wireguardStatus={wireguardStatus}
-              gpuInfo={gpuStatus?.gpus}
               gpuModels={gpuStatus?.models}
             />
           </ScrollProgress>

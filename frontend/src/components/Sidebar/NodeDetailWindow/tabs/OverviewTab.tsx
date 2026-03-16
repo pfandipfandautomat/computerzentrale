@@ -17,7 +17,7 @@ import {
   useMetricsActions,
 } from '@/stores/useMetricsStore';
 import { cn } from '@/lib/utils';
-import type { InfraNode, DockerContainer, ReverseProxyConfig, WireGuardStatus, GPUInfo, GPUModel } from '@/types';
+import type { InfraNode, DockerContainer, ReverseProxyConfig, WireGuardStatus, GPUModel } from '@/types';
 import { TAG_CONFIG as TAG_CONFIG_IMPORT } from '@/types';
 
 interface OverviewTabProps {
@@ -28,7 +28,6 @@ interface OverviewTabProps {
   containers: DockerContainer[];
   proxyConfigs: ReverseProxyConfig[];
   wireguardStatus: WireGuardStatus | undefined;
-  gpuInfo?: GPUInfo[];
   gpuModels?: GPUModel[];
 }
 
@@ -40,7 +39,6 @@ export function OverviewTab({
   containers,
   proxyConfigs,
   wireguardStatus,
-  gpuInfo,
   gpuModels,
 }: OverviewTabProps) {
   const navigate = useNavigate();
