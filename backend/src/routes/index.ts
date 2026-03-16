@@ -10,6 +10,7 @@ import metricsRouter from './metrics.js';
 import authRouter from './auth.js';
 import interfacesRouter from './interfaces.js';
 import alertingRouter from './alerting.js';
+import gpuRouter from './gpu.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -40,5 +41,6 @@ router.use('/cache', cacheRouter);
 router.use('/metrics', metricsRouter);
 router.use('/interfaces', interfacesRouter);
 router.use('/alerting', alertingRouter);
+router.use('/gpu', gpuRouter);
 
 export default router;

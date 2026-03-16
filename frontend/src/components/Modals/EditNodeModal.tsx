@@ -48,6 +48,9 @@ const TAG_DESCRIPTIONS: Record<NodeTag, { description: string }> = {
   'wireguard': { 
     description: 'View VPN peers, generate client configs' 
   },
+  'gpu': {
+    description: 'GPU cluster for LLM inference with OpenAI-compatible API'
+  },
 };
 
 export function EditNodeModal({ node, open, onOpenChange }: EditNodeModalProps) {

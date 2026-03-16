@@ -14,6 +14,7 @@ import {
   useContainersByNodeId,
   useProxyConfigsByNodeId,
   useWireguardStatusByNodeId,
+  useGpuStatusByNodeId,
   useInfraActions,
 } from '@/stores/useInfraStore';
 
@@ -36,15 +37,18 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
   const containersByNodeId = useContainersByNodeId();
   const proxyConfigsByNodeId = useProxyConfigsByNodeId();
   const wireguardStatusByNodeId = useWireguardStatusByNodeId();
+  const gpuStatusByNodeId = useGpuStatusByNodeId();
   const {
     fetchContainersForNode,
     fetchProxyConfigsForNode,
     fetchWireGuardStatusForNode,
+    fetchGpuStatusForNode,
   } = useInfraActions();
 
   const containers = containersByNodeId[nodeId] || [];
   const proxyConfigs = proxyConfigsByNodeId[nodeId] || [];
   const wireguardStatus = wireguardStatusByNodeId[nodeId];
+  const gpuStatus = gpuStatusByNodeId[nodeId];
   const nodeStatus = nodeStatusById[nodeId];
 
   const status = nodeStatus?.status ?? node?.status ?? 'unknown';
@@ -142,6 +146,15 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
     }
   }, [node, fetchWireGuardStatusForNode]);
 
+  const fetchGpuStatus = useCallback(async () => {
+    if (!node || !node.tags?.includes('gpu')) return;
+    try {
+      await fetchGpuStatusForNode(node.id);
+    } catch (error) {
+      console.error('Failed to fetch GPU status:', error);
+    }
+  }, [node, fetchGpuStatusForNode]);
+
   // Auto-fetch on mount
   useEffect(() => {
     if (node?.tags?.includes('docker') && lastFetchedNodeId.current !== node.id) {
@@ -164,6 +177,12 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
     }
   }, [node?.id, node?.tags, fetchWireGuardStatus]);
 
+  useEffect(() => {
+    if (node?.tags?.includes('gpu')) {
+      fetchGpuStatus();
+    }
+  }, [node?.id, node?.tags, fetchGpuStatus]);
+
   // Auto-refresh data every 10 seconds
   useEffect(() => {
     if (!node) return;
@@ -178,11 +197,14 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
       if (node.tags?.includes('wireguard')) {
         fetchWireGuardStatusForNode(node.id);
       }
+      if (node.tags?.includes('gpu')) {
+        fetchGpuStatus();
+      }
     };
 
     const interval = setInterval(refreshData, 10000);
     return () => clearInterval(interval);
-  }, [node?.id, node?.tags, fetchContainersForNode, fetchProxyConfigsForNode, fetchWireGuardStatusForNode]);
+  }, [node?.id, node?.tags, fetchContainersForNode, fetchProxyConfigsForNode, fetchWireGuardStatusForNode, fetchGpuStatus]);
 
   if (!node) return null;
 
@@ -240,6 +262,8 @@ export function NodeDetailWindow({ nodeId, onClose }: NodeDetailWindowProps) {
               containers={containers}
               proxyConfigs={proxyConfigs}
               wireguardStatus={wireguardStatus}
+              gpuInfo={gpuStatus?.gpus}
+              gpuModels={gpuStatus?.models}
             />
           </ScrollProgress>
         )}

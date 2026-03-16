@@ -9,6 +9,7 @@ import {
   Search,
   AlertCircle,
   Terminal as TerminalIcon,
+  Cpu,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,11 +29,13 @@ import {
   DockerHost, 
   ReverseProxyHost, 
   WireGuardHost,
+  GPUHost,
   useActiveTab,
   useSelectedHostId,
   useDockerHosts,
   useProxyHosts,
   useWireguardHosts,
+  useGpuHosts,
   useManagementActions,
 } from '@/stores/useManagementStore'
 import { useUrlParams, createTabParam, createHostParam } from '@/hooks/useUrlParams'
@@ -43,6 +46,7 @@ import { Terminal } from '@/components/Terminal'
 import { Docker } from './Docker'
 import { ReverseProxy } from './ReverseProxy'
 import { WireGuard } from './WireGuard'
+import { GPU } from './GPU'
 
 interface Tab {
   id: ManagementTab
@@ -57,6 +61,7 @@ const tabs: Tab[] = [
   { id: 'docker', label: 'Docker', icon: Container, color: 'text-sky-400', tag: 'docker' },
   { id: 'reverse-proxy', label: 'Reverse Proxy', icon: Globe, color: 'text-violet-400', tag: 'reverse-proxy' },
   { id: 'wireguard', label: 'WireGuard', icon: Shield, color: 'text-amber-400', tag: 'wireguard' },
+  { id: 'gpu', label: 'GPU Cluster', icon: Cpu, color: 'text-emerald-400', tag: 'gpu' },
   { id: 'storage', label: 'Storage', icon: HardDrive, color: 'text-emerald-400', tag: 'storage' },
 ]
 
@@ -65,6 +70,7 @@ const tabLabels: Record<ManagementTab, string> = {
   'reverse-proxy': 'Proxy Hosts',
   'wireguard': 'VPN Hosts',
   'terminal': 'Servers',
+  'gpu': 'GPU Hosts',
   'storage': 'Storage',
 }
 
@@ -93,7 +99,7 @@ function HostsSkeleton() {
 }
 
 function TabButton({ tab }: { tab: Tab }) {
-  const { activeTab, setActiveTab, getHostCounts, isLoadingDocker, isLoadingProxy, isLoadingWireguard } = useManagementStore()
+  const { activeTab, setActiveTab, getHostCounts, isLoadingDocker, isLoadingProxy, isLoadingWireguard, isLoadingGpu } = useManagementStore()
   const nodes = useNodes()
   const nodeStatusById = useNodeStatusById()
   const isActive = activeTab === tab.id
@@ -106,6 +112,7 @@ function TabButton({ tab }: { tab: Tab }) {
       case 'docker': return counts.docker
       case 'reverse-proxy': return counts.proxy
       case 'wireguard': return counts.wireguard
+      case 'gpu': return counts.gpu
       case 'terminal': {
         const servers = nodes.filter(n => n.type === 'server')
         const online = servers.filter(n => {
@@ -123,6 +130,7 @@ function TabButton({ tab }: { tab: Tab }) {
       case 'docker': return isLoadingDocker
       case 'reverse-proxy': return isLoadingProxy
       case 'wireguard': return isLoadingWireguard
+      case 'gpu': return isLoadingGpu
       default: return false
     }
   }
@@ -162,7 +170,7 @@ function HostCard({
   iconColor,
   subtitle,
 }: { 
-  host: DockerHost | ReverseProxyHost | WireGuardHost
+  host: DockerHost | ReverseProxyHost | WireGuardHost | GPUHost
   isSelected: boolean
   onClick: () => void
   icon: React.ElementType
@@ -312,6 +320,12 @@ function HostsList() {
           iconColor: 'text-amber-400',
           getSubtitle: (h: WireGuardHost) => `${h.interfaces.length} interface${h.interfaces.length !== 1 ? 's' : ''}`,
         }
+      case 'gpu':
+        return {
+          icon: Cpu,
+          iconColor: 'text-emerald-400',
+          getSubtitle: (h: GPUHost) => `${h.gpus.length} GPU${h.gpus.length !== 1 ? 's' : ''} · ${h.models.length} model${h.models.length !== 1 ? 's' : ''}`,
+        }
       default:
         return {
           icon: Server,
@@ -325,7 +339,7 @@ function HostsList() {
   
   return (
     <>
-      {filteredHosts.map((host: DockerHost | ReverseProxyHost | WireGuardHost) => (
+      {filteredHosts.map((host: DockerHost | ReverseProxyHost | WireGuardHost | GPUHost) => (
         <HostCard
           key={host.node.id}
           host={host}
@@ -475,6 +489,7 @@ export function Management() {
   const dockerHosts = useDockerHosts()
   const proxyHosts = useProxyHosts()
   const wireguardHosts = useWireguardHosts()
+  const gpuHosts = useGpuHosts()
   const nodes = useNodes()
   const { setSelectedHostId, fetchAllHosts, refreshCurrentTab } = useManagementActions()
   const { initialLoadComplete } = store
@@ -535,13 +550,16 @@ export function Management() {
       case 'wireguard':
         hosts = wireguardHosts
         break
+      case 'gpu':
+        hosts = gpuHosts
+        break
     }
     
     // Auto-select first host if available
     if (hosts.length > 0) {
       setSelectedHostId(hosts[0].node.id)
     }
-  }, [activeTab, dockerHosts, proxyHosts, wireguardHosts, selectedHostId, setSelectedHostId, nodes])
+  }, [activeTab, dockerHosts, proxyHosts, wireguardHosts, gpuHosts, selectedHostId, setSelectedHostId, nodes])
   
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -562,6 +580,7 @@ export function Management() {
         {activeTab === 'docker' && <Docker />}
         {activeTab === 'reverse-proxy' && <ReverseProxy />}
         {activeTab === 'wireguard' && <WireGuard />}
+        {activeTab === 'gpu' && <GPU />}
         {activeTab === 'terminal' && <TerminalContent />}
         {activeTab === 'storage' && <StoragePlaceholder />}
       </div>

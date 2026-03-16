@@ -1,11 +1,11 @@
-import { Container, Globe, Shield, type LucideIcon } from 'lucide-react';
+import { Container, Cpu, Globe, Shield, type LucideIcon } from 'lucide-react';
 
 export type NodeStatus = 'online' | 'offline' | 'unknown';
 export type NodeType = 'server' | 'router' | 'nas' | 'client' | 'service' | 'custom';
-export type NodeTag = 'reverse-proxy' | 'wireguard' | 'docker';
+export type NodeTag = 'reverse-proxy' | 'wireguard' | 'docker' | 'gpu';
 export type HandleType = 'external' | 'internal' | 'default' | 'wireguard';
 
-export const NODE_TAGS: NodeTag[] = ['reverse-proxy', 'wireguard', 'docker'];
+export const NODE_TAGS: NodeTag[] = ['reverse-proxy', 'wireguard', 'docker', 'gpu'];
 
 export const TAG_CONFIG: Record<NodeTag, { label: string; color: string; bg: string; ring: string; icon: LucideIcon }> = {
   'reverse-proxy': {
@@ -28,6 +28,13 @@ export const TAG_CONFIG: Record<NodeTag, { label: string; color: string; bg: str
     bg: 'bg-sky-500/10',
     ring: 'ring-sky-500/30',
     icon: Container,
+  },
+  'gpu': {
+    label: 'GPU Cluster',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    ring: 'ring-emerald-500/30',
+    icon: Cpu,
   },
 };
 
@@ -124,6 +131,77 @@ export interface GeneratedWireGuardClient {
   interfaceName: string;
   configText: string;
   oneLiner: string;
+}
+
+// GPU Cluster types (inspired by pi-mono/pods)
+export type GPUVendor = 'nvidia' | 'amd' | 'unknown';
+
+export interface GPUInfo {
+  id: number;
+  name: string;
+  memory: string;
+  memoryUsed?: number;
+  memoryTotal?: number;
+  utilization?: number;
+  vendor: GPUVendor;
+}
+
+export interface GPUModel {
+  name: string;
+  model: string;
+  port: number;
+  gpuIds: number[];
+  status: 'running' | 'starting' | 'stopped' | 'error';
+  pid?: number;
+}
+
+export interface GPUPodStatus {
+  nodeId: string;
+  nodeName: string;
+  ssh: string;
+  gpus: GPUInfo[];
+  models: GPUModel[];
+  modelsPath?: string;
+  isOnline: boolean;
+  lastChecked?: string;
+}
+
+export interface GPUClusterStatus {
+  pods: GPUPodStatus[];
+  totalGpus: number;
+  availableGpus: number;
+  runningModels: number;
+}
+
+export interface GPUCompletionRequest {
+  model?: string;
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
+  temperature?: number;
+  max_tokens?: number;
+  stream?: boolean;
+}
+
+export interface GPUCompletionResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 export interface InfraNode {

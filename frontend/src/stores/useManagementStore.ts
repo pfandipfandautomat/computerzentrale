@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 import { api } from '@/services/api'
-import { InfraNode, DockerContainer, NginxConfigFile, WireGuardInterfaceInfo } from '@/types'
+import { InfraNode, DockerContainer, NginxConfigFile, WireGuardInterfaceInfo, GPUInfo, GPUModel } from '@/types'
 
 // Fast deep equality check for arrays of hosts
 // Uses JSON.stringify for simplicity but caches to avoid repeated comparisons
@@ -22,7 +22,7 @@ function areHostsEqual<T extends { node: InfraNode }>(a: T[], b: T[]): boolean {
   }
 }
 
-export type ManagementTab = 'docker' | 'reverse-proxy' | 'wireguard' | 'terminal' | 'storage'
+export type ManagementTab = 'docker' | 'reverse-proxy' | 'wireguard' | 'terminal' | 'storage' | 'gpu'
 
 export interface DockerHost {
   node: InfraNode
@@ -39,10 +39,17 @@ export interface WireGuardHost {
   interfaces: WireGuardInterfaceInfo[]
 }
 
+export interface GPUHost {
+  node: InfraNode
+  gpus: GPUInfo[]
+  models: GPUModel[]
+}
+
 interface SearchResults {
   docker: DockerHost[]
   proxy: ReverseProxyHost[]
   wireguard: WireGuardHost[]
+  gpu: GPUHost[]
   hasOtherResults: boolean
   otherTabsWithResults: ManagementTab[]
 }
@@ -57,11 +64,13 @@ interface ManagementStore {
   dockerHosts: DockerHost[]
   proxyHosts: ReverseProxyHost[]
   wireguardHosts: WireGuardHost[]
+  gpuHosts: GPUHost[]
   
   // Loading states
   isLoadingDocker: boolean
   isLoadingProxy: boolean
   isLoadingWireguard: boolean
+  isLoadingGpu: boolean
   initialLoadComplete: boolean
   
   // Actions
@@ -73,6 +82,7 @@ interface ManagementStore {
   fetchDockerHosts: () => Promise<void>
   fetchProxyHosts: () => Promise<void>
   fetchWireguardHosts: () => Promise<void>
+  fetchGpuHosts: () => Promise<void>
   fetchAllHosts: () => Promise<void>
   refreshCurrentTab: () => Promise<void>
   
@@ -81,15 +91,16 @@ interface ManagementStore {
     docker: { total: number; online: number }
     proxy: { total: number; online: number }
     wireguard: { total: number; online: number }
+    gpu: { total: number; online: number }
   }
   
-  getFilteredHostsForCurrentTab: () => DockerHost[] | ReverseProxyHost[] | WireGuardHost[]
+  getFilteredHostsForCurrentTab: () => DockerHost[] | ReverseProxyHost[] | WireGuardHost[] | GPUHost[]
   
   getSearchResults: () => SearchResults
   
-  getCurrentTabHosts: () => DockerHost[] | ReverseProxyHost[] | WireGuardHost[]
+  getCurrentTabHosts: () => DockerHost[] | ReverseProxyHost[] | WireGuardHost[] | GPUHost[]
   
-  getSelectedHost: () => DockerHost | ReverseProxyHost | WireGuardHost | null
+  getSelectedHost: () => DockerHost | ReverseProxyHost | WireGuardHost | GPUHost | null
 }
 
 // Helper to filter hosts by search query
@@ -123,6 +134,16 @@ function filterWireguardHosts(hosts: WireGuardHost[], query: string): WireGuardH
   )
 }
 
+function filterGpuHosts(hosts: GPUHost[], query: string): GPUHost[] {
+  if (!query) return hosts
+  const q = query.toLowerCase()
+  return hosts.filter(host => 
+    host.node.name.toLowerCase().includes(q) ||
+    host.node.host.toLowerCase().includes(q) ||
+    host.models.some(m => m.name.toLowerCase().includes(q) || m.model.toLowerCase().includes(q))
+  )
+}
+
 export const useManagementStore = create<ManagementStore>((set, get) => ({
   // Initial state
   activeTab: 'terminal',
@@ -132,10 +153,12 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
   dockerHosts: [],
   proxyHosts: [],
   wireguardHosts: [],
+  gpuHosts: [],
   
   isLoadingDocker: false,
   isLoadingProxy: false,
   isLoadingWireguard: false,
+  isLoadingGpu: false,
   initialLoadComplete: false,
   
   // Actions
@@ -226,20 +249,45 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
     }
   },
   
-  fetchAllHosts: async () => {
-    set({ isLoadingDocker: true, isLoadingProxy: true, isLoadingWireguard: true })
+  fetchGpuHosts: async () => {
+    const isInitialLoad = get().gpuHosts.length === 0
+    
+    if (isInitialLoad) {
+      set({ isLoadingGpu: true })
+    }
     
     try {
-      const [dockerRes, proxyRes, wireguardRes] = await Promise.allSettled([
+      const response = await api.getGPUHosts()
+      const currentHosts = get().gpuHosts
+      
+      if (!areHostsEqual(currentHosts, response.hosts)) {
+        set({ gpuHosts: response.hosts })
+      }
+    } catch (error) {
+      console.error('Failed to fetch GPU hosts:', error)
+    } finally {
+      if (isInitialLoad) {
+        set({ isLoadingGpu: false })
+      }
+    }
+  },
+  
+  fetchAllHosts: async () => {
+    set({ isLoadingDocker: true, isLoadingProxy: true, isLoadingWireguard: true, isLoadingGpu: true })
+    
+    try {
+      const [dockerRes, proxyRes, wireguardRes, gpuRes] = await Promise.allSettled([
         api.getDockerHosts(),
         api.getReverseProxyHosts(),
         api.getWireGuardHosts(),
+        api.getGPUHosts(),
       ])
       
       const currentState = get()
       const newDockerHosts = dockerRes.status === 'fulfilled' ? dockerRes.value.hosts : []
       const newProxyHosts = proxyRes.status === 'fulfilled' ? proxyRes.value.hosts : []
       const newWireguardHosts = wireguardRes.status === 'fulfilled' ? wireguardRes.value.hosts : []
+      const newGpuHosts = gpuRes.status === 'fulfilled' ? gpuRes.value.hosts : []
       
       // Only update state with changed data
       const updates: Partial<ManagementStore> = {
@@ -255,15 +303,18 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
       if (!areHostsEqual(currentState.wireguardHosts, newWireguardHosts)) {
         updates.wireguardHosts = newWireguardHosts
       }
+      if (!areHostsEqual(currentState.gpuHosts, newGpuHosts)) {
+        updates.gpuHosts = newGpuHosts
+      }
       
       set(updates)
     } finally {
-      set({ isLoadingDocker: false, isLoadingProxy: false, isLoadingWireguard: false })
+      set({ isLoadingDocker: false, isLoadingProxy: false, isLoadingWireguard: false, isLoadingGpu: false })
     }
   },
   
   refreshCurrentTab: async () => {
-    const { activeTab, fetchDockerHosts, fetchProxyHosts, fetchWireguardHosts } = get()
+    const { activeTab, fetchDockerHosts, fetchProxyHosts, fetchWireguardHosts, fetchGpuHosts } = get()
     
     switch (activeTab) {
       case 'docker':
@@ -275,12 +326,15 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
       case 'wireguard':
         await fetchWireguardHosts()
         break
+      case 'gpu':
+        await fetchGpuHosts()
+        break
     }
   },
   
   // Computed getters
   getHostCounts: () => {
-    const { dockerHosts, proxyHosts, wireguardHosts } = get()
+    const { dockerHosts, proxyHosts, wireguardHosts, gpuHosts } = get()
     
     return {
       docker: {
@@ -295,11 +349,15 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
         total: wireguardHosts.length,
         online: wireguardHosts.filter(h => h.node.status === 'online').length,
       },
+      gpu: {
+        total: gpuHosts.length,
+        online: gpuHosts.filter(h => h.node.status === 'online').length,
+      },
     }
   },
   
   getCurrentTabHosts: () => {
-    const { activeTab, dockerHosts, proxyHosts, wireguardHosts } = get()
+    const { activeTab, dockerHosts, proxyHosts, wireguardHosts, gpuHosts } = get()
     
     switch (activeTab) {
       case 'docker':
@@ -308,13 +366,15 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
         return proxyHosts
       case 'wireguard':
         return wireguardHosts
+      case 'gpu':
+        return gpuHosts
       default:
         return []
     }
   },
   
   getFilteredHostsForCurrentTab: () => {
-    const { activeTab, dockerHosts, proxyHosts, wireguardHosts, searchQuery } = get()
+    const { activeTab, dockerHosts, proxyHosts, wireguardHosts, gpuHosts, searchQuery } = get()
     
     switch (activeTab) {
       case 'docker':
@@ -323,17 +383,20 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
         return filterProxyHosts(proxyHosts, searchQuery)
       case 'wireguard':
         return filterWireguardHosts(wireguardHosts, searchQuery)
+      case 'gpu':
+        return filterGpuHosts(gpuHosts, searchQuery)
       default:
         return []
     }
   },
   
   getSearchResults: () => {
-    const { activeTab, dockerHosts, proxyHosts, wireguardHosts, searchQuery } = get()
+    const { activeTab, dockerHosts, proxyHosts, wireguardHosts, gpuHosts, searchQuery } = get()
     
     const filteredDocker = filterDockerHosts(dockerHosts, searchQuery)
     const filteredProxy = filterProxyHosts(proxyHosts, searchQuery)
     const filteredWireguard = filterWireguardHosts(wireguardHosts, searchQuery)
+    const filteredGpu = filterGpuHosts(gpuHosts, searchQuery)
     
     const otherTabsWithResults: ManagementTab[] = []
     
@@ -346,18 +409,22 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
     if (activeTab !== 'wireguard' && filteredWireguard.length > 0) {
       otherTabsWithResults.push('wireguard')
     }
+    if (activeTab !== 'gpu' && filteredGpu.length > 0) {
+      otherTabsWithResults.push('gpu')
+    }
     
     return {
       docker: filteredDocker,
       proxy: filteredProxy,
       wireguard: filteredWireguard,
+      gpu: filteredGpu,
       hasOtherResults: otherTabsWithResults.length > 0,
       otherTabsWithResults,
     }
   },
   
   getSelectedHost: () => {
-    const { activeTab, selectedHostId, dockerHosts, proxyHosts, wireguardHosts } = get()
+    const { activeTab, selectedHostId, dockerHosts, proxyHosts, wireguardHosts, gpuHosts } = get()
     
     if (!selectedHostId) return null
     
@@ -368,6 +435,8 @@ export const useManagementStore = create<ManagementStore>((set, get) => ({
         return proxyHosts.find(h => h.node.id === selectedHostId) || null
       case 'wireguard':
         return wireguardHosts.find(h => h.node.id === selectedHostId) || null
+      case 'gpu':
+        return gpuHosts.find(h => h.node.id === selectedHostId) || null
       default:
         return null
     }
@@ -383,11 +452,13 @@ export const useSearchQuery = () => useManagementStore(state => state.searchQuer
 export const useWireguardHosts = () => useManagementStore(state => state.wireguardHosts)
 export const useDockerHosts = () => useManagementStore(state => state.dockerHosts)
 export const useProxyHosts = () => useManagementStore(state => state.proxyHosts)
+export const useGpuHosts = () => useManagementStore(state => state.gpuHosts)
 
 // Loading states
 export const useIsLoadingWireguard = () => useManagementStore(state => state.isLoadingWireguard)
 export const useIsLoadingDocker = () => useManagementStore(state => state.isLoadingDocker)
 export const useIsLoadingProxy = () => useManagementStore(state => state.isLoadingProxy)
+export const useIsLoadingGpu = () => useManagementStore(state => state.isLoadingGpu)
 
 // Actions - these are stable references, safe to destructure
 export const useManagementActions = () => useManagementStore(
@@ -398,6 +469,7 @@ export const useManagementActions = () => useManagementStore(
     fetchDockerHosts: state.fetchDockerHosts,
     fetchProxyHosts: state.fetchProxyHosts,
     fetchWireguardHosts: state.fetchWireguardHosts,
+    fetchGpuHosts: state.fetchGpuHosts,
     fetchAllHosts: state.fetchAllHosts,
     refreshCurrentTab: state.refreshCurrentTab,
   }))

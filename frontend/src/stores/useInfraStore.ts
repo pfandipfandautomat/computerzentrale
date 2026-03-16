@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
-import { InfraNode, InfraEdge, DockerContainer, ReverseProxyConfig, WireGuardStatus, NetworkInterface } from '@/types'
+import { InfraNode, InfraEdge, DockerContainer, ReverseProxyConfig, WireGuardStatus, NetworkInterface, GPUPodStatus } from '@/types'
 import { api } from '@/services/api'
 
 // Interface for node status stored separately from nodes
@@ -18,10 +18,12 @@ interface InfraStore {
   containersFetched: boolean
   proxyConfigsFetched: boolean
   wireguardStatusFetched: boolean
+  gpuStatusFetched: boolean
   interfacesFetched: boolean
   containersByNodeId: Record<string, DockerContainer[]>
   proxyConfigsByNodeId: Record<string, ReverseProxyConfig[]>
   wireguardStatusByNodeId: Record<string, WireGuardStatus>
+  gpuStatusByNodeId: Record<string, GPUPodStatus>
   interfacesByNodeId: Record<string, NetworkInterface[]>
   nodeStatusById: Record<string, NodeStatus>
   pendingPositions: Record<string, { x: number; y: number }>
@@ -49,6 +51,8 @@ interface InfraStore {
   fetchAllProxyConfigs: () => Promise<void>
   fetchWireGuardStatusForNode: (nodeId: string) => Promise<void>
   fetchAllWireGuardStatus: () => Promise<void>
+  fetchGpuStatusForNode: (nodeId: string) => Promise<void>
+  fetchAllGpuStatus: () => Promise<void>
   fetchInterfacesForNode: (nodeId: string) => Promise<void>
   fetchAllInterfaces: () => Promise<void>
   addInterface: (nodeId: string, iface: NetworkInterface) => void
@@ -66,10 +70,12 @@ export const useInfraStore = create<InfraStore>((set, get) => ({
   containersFetched: false,
   proxyConfigsFetched: false,
   wireguardStatusFetched: false,
+  gpuStatusFetched: false,
   interfacesFetched: false,
   containersByNodeId: {},
   proxyConfigsByNodeId: {},
   wireguardStatusByNodeId: {},
+  gpuStatusByNodeId: {},
   interfacesByNodeId: {},
   nodeStatusById: {},
   pendingPositions: {},
@@ -151,6 +157,9 @@ export const useInfraStore = create<InfraStore>((set, get) => ({
       wireguardStatusByNodeId: Object.fromEntries(
         Object.entries(state.wireguardStatusByNodeId).filter(([key]) => key !== id)
       ),
+      gpuStatusByNodeId: Object.fromEntries(
+        Object.entries(state.gpuStatusByNodeId).filter(([key]) => key !== id)
+      ),
       interfacesByNodeId: Object.fromEntries(
         Object.entries(state.interfacesByNodeId).filter(([key]) => key !== id)
       ),
@@ -220,6 +229,11 @@ export const useInfraStore = create<InfraStore>((set, get) => ({
       if (!get().wireguardStatusFetched) {
         set({ wireguardStatusFetched: true })
         fetchPromises.push(get().fetchAllWireGuardStatus())
+      }
+      
+      if (!get().gpuStatusFetched) {
+        set({ gpuStatusFetched: true })
+        fetchPromises.push(get().fetchAllGpuStatus())
       }
       
       if (!get().interfacesFetched) {
@@ -304,6 +318,30 @@ export const useInfraStore = create<InfraStore>((set, get) => ({
       wireguardNodes.map(node => get().fetchWireGuardStatusForNode(node.id))
     )
   },
+  fetchGpuStatusForNode: async (nodeId: string) => {
+    try {
+      const response = await api.getNodeGPUStatus(nodeId);
+      if (response.status) {
+        set((state) => ({
+          gpuStatusByNodeId: {
+            ...state.gpuStatusByNodeId,
+            [nodeId]: response.status,
+          },
+        }));
+      }
+    } catch (error) {
+      console.error(`Failed to fetch GPU status for node ${nodeId}:`, error);
+    }
+  },
+
+  fetchAllGpuStatus: async () => {
+    const state = get();
+    const gpuNodes = state.nodes.filter(node => node.tags?.includes('gpu'));
+    await Promise.all(
+      gpuNodes.map(node => get().fetchGpuStatusForNode(node.id))
+    );
+    set({ gpuStatusFetched: true });
+  },
   fetchInterfacesForNode: async (nodeId: string) => {
     const node = get().nodes.find(n => n.id === nodeId)
     if (!node || !node.tags?.includes('wireguard')) return
@@ -357,6 +395,7 @@ export const useNodeStatusById = () => useInfraStore(state => state.nodeStatusBy
 export const useContainersByNodeId = () => useInfraStore(state => state.containersByNodeId)
 export const useProxyConfigsByNodeId = () => useInfraStore(state => state.proxyConfigsByNodeId)
 export const useWireguardStatusByNodeId = () => useInfraStore(state => state.wireguardStatusByNodeId)
+export const useGpuStatusByNodeId = () => useInfraStore(state => state.gpuStatusByNodeId)
 export const useInterfacesByNodeId = () => useInfraStore(state => state.interfacesByNodeId)
 
 // Optimized single node selectors - only re-render when that specific node changes
@@ -400,6 +439,7 @@ export const useInfraActions = () => useInfraStore(
     fetchContainersForNode: state.fetchContainersForNode,
     fetchProxyConfigsForNode: state.fetchProxyConfigsForNode,
     fetchWireGuardStatusForNode: state.fetchWireGuardStatusForNode,
+    fetchGpuStatusForNode: state.fetchGpuStatusForNode,
     fetchInterfacesForNode: state.fetchInterfacesForNode,
   }))
 )

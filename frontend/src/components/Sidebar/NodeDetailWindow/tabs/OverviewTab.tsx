@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Globe, Shield } from 'lucide-react';
+import { Container, Globe, Shield, Cpu } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -17,7 +17,7 @@ import {
   useMetricsActions,
 } from '@/stores/useMetricsStore';
 import { cn } from '@/lib/utils';
-import type { InfraNode, DockerContainer, ReverseProxyConfig, WireGuardStatus } from '@/types';
+import type { InfraNode, DockerContainer, ReverseProxyConfig, WireGuardStatus, GPUInfo, GPUModel } from '@/types';
 import { TAG_CONFIG as TAG_CONFIG_IMPORT } from '@/types';
 
 interface OverviewTabProps {
@@ -28,6 +28,8 @@ interface OverviewTabProps {
   containers: DockerContainer[];
   proxyConfigs: ReverseProxyConfig[];
   wireguardStatus: WireGuardStatus | undefined;
+  gpuInfo?: GPUInfo[];
+  gpuModels?: GPUModel[];
 }
 
 export function OverviewTab({
@@ -38,6 +40,8 @@ export function OverviewTab({
   containers,
   proxyConfigs,
   wireguardStatus,
+  gpuInfo,
+  gpuModels,
 }: OverviewTabProps) {
   const navigate = useNavigate();
 
@@ -276,7 +280,7 @@ export function OverviewTab({
       </div>
 
       {/* Section 5: Modules */}
-      {(containers.length > 0 || proxyConfigs.length > 0 || (wireguardStatus?.peers?.length ?? 0) > 0) && (
+      {(containers.length > 0 || proxyConfigs.length > 0 || (wireguardStatus?.peers?.length ?? 0) > 0 || (gpuModels?.length ?? 0) > 0) && (
         <div className="pt-4 border-t border-border/40 space-y-4">
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground/70 font-medium">
             Modules
@@ -415,6 +419,53 @@ export function OverviewTab({
                   {wireguardStatus.peers.length > 5 && (
                     <div className="text-xs text-muted-foreground/60 text-center pt-1">
                       +{wireguardStatus.peers.length - 5} more
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* GPU Models */}
+            {gpuModels && gpuModels.length > 0 && (
+              <Card className="border-border/40">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground/70 font-medium flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="h-3.5 w-3.5" />
+                      GPU Models · {gpuModels.length}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/management?tab=gpu&host=${nodeId}`)}
+                      className="text-xs text-primary hover:underline normal-case font-normal"
+                    >
+                      Manage
+                    </button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  {gpuModels.slice(0, 5).map((model, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/management?tab=gpu&host=${nodeId}`)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/30 transition-colors text-left"
+                    >
+                      <div
+                        className={cn(
+                          'h-1.5 w-1.5 rounded-full flex-shrink-0 transition-all duration-500 ease-out',
+                          model.status === 'running'
+                            ? 'bg-emerald-500/70 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
+                            : model.status === 'starting'
+                            ? 'bg-yellow-500/70 shadow-[0_0_6px_rgba(234,179,8,0.4)]'
+                            : 'bg-red-500/70'
+                        )}
+                        title={model.status}
+                      />
+                      <span className="font-mono text-sm truncate">{model.name}</span>
+                    </button>
+                  ))}
+                  {gpuModels.length > 5 && (
+                    <div className="text-xs text-muted-foreground/60 text-center pt-1">
+                      +{gpuModels.length - 5} more
                     </div>
                   )}
                 </CardContent>

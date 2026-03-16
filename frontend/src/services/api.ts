@@ -1,4 +1,4 @@
-import { InfraNode, InfraEdge, MonitoringSettings, NodeTag, DockerContainer, ReverseProxyConfig, WireGuardStatus, NginxConfigFile, NginxTestResult, CreateProxyConfigRequest, WireGuardInterfaceInfo, WireGuardInterfaceDetail, GeneratedWireGuardClient, NetworkInterface } from '@/types'
+import { InfraNode, InfraEdge, MonitoringSettings, NodeTag, DockerContainer, ReverseProxyConfig, WireGuardStatus, NginxConfigFile, NginxTestResult, CreateProxyConfigRequest, WireGuardInterfaceInfo, WireGuardInterfaceDetail, GeneratedWireGuardClient, NetworkInterface, GPUInfo, GPUModel, GPUPodStatus, GPUClusterStatus, GPUCompletionRequest, GPUCompletionResponse } from '@/types'
 
 const API_BASE_URL = '/api'
 
@@ -430,6 +430,92 @@ class ApiService {
     if (limit) params.set('limit', limit.toString());
     const query = params.toString();
     return this.request(`/alerting/events/node/${nodeId}${query ? `?${query}` : ''}`);
+  }
+
+  // ============ GPU Cluster ============
+
+  // Get GPU cluster status
+  async getGPUClusterStatus(): Promise<GPUClusterStatus> {
+    return this.request<GPUClusterStatus>('/gpu/cluster');
+  }
+
+  // Get all GPU hosts with their status
+  async getGPUHosts(): Promise<{ hosts: Array<{ node: InfraNode; gpus: GPUInfo[]; models: GPUModel[] }> }> {
+    return this.request<{ hosts: Array<{ node: InfraNode; gpus: GPUInfo[]; models: GPUModel[] }> }>('/gpu/hosts');
+  }
+
+  // Get GPU status for a specific node
+  async getNodeGPUStatus(nodeId: string): Promise<{ status: GPUPodStatus }> {
+    return this.request<{ status: GPUPodStatus }>(`/gpu/${nodeId}/status`);
+  }
+
+  // Get GPU info for a specific node
+  async getNodeGPUs(nodeId: string): Promise<{ gpus: GPUInfo[] }> {
+    return this.request<{ gpus: GPUInfo[] }>(`/gpu/${nodeId}/gpus`);
+  }
+
+  // Get running models on a specific node
+  async getNodeModels(nodeId: string): Promise<{ models: GPUModel[] }> {
+    return this.request<{ models: GPUModel[] }>(`/gpu/${nodeId}/models`);
+  }
+
+  // List all available models across the cluster
+  async listGPUModels(): Promise<{ object: string; data: Array<{ id: string; object: string; created: number; owned_by: string; pod: string; port: number; status: string }> }> {
+    return this.request('/gpu/v1/models');
+  }
+
+  // Send chat completion request to GPU cluster
+  async gpuChatCompletion(request: GPUCompletionRequest): Promise<GPUCompletionResponse> {
+    return this.request<GPUCompletionResponse>('/gpu/v1/chat/completions', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // Invalidate GPU cache for a node
+  async invalidateGPUCache(nodeId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/gpu/${nodeId}/cache`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get known models with configurations
+  async getKnownModels(): Promise<{ models: Array<{ id: string; name: string; configs: Array<{ gpuCount: number; gpuTypes?: string[]; args: string[]; notes?: string }> }> }> {
+    return this.request('/gpu/models/known');
+  }
+
+  // Get compatible models for a node's GPU setup
+  async getCompatibleModels(nodeId: string): Promise<{ gpuCount: number; gpuType: string; models: Array<{ id: string; name: string; config: { gpuCount: number; args: string[]; notes?: string } }> }> {
+    return this.request(`/gpu/${nodeId}/models/compatible`);
+  }
+
+  // Start a vLLM model on a GPU node
+  async startGPUModel(nodeId: string, data: {
+    modelId: string;
+    name: string;
+    gpuIds?: number[];
+    port?: number;
+    vllmArgs?: string[];
+    memory?: string;
+    context?: string;
+  }): Promise<{ success: boolean; message: string; port?: number; pid?: number }> {
+    return this.request(`/gpu/${nodeId}/models/start`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Stop a running vLLM model
+  async stopGPUModel(nodeId: string, pid: number): Promise<{ success: boolean; message: string }> {
+    return this.request(`/gpu/${nodeId}/models/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ pid }),
+    });
+  }
+
+  // Get logs for a running model
+  async getGPUModelLogs(nodeId: string, modelName: string, tail: number = 100): Promise<{ success: boolean; logs?: string; message?: string }> {
+    return this.request(`/gpu/${nodeId}/models/${encodeURIComponent(modelName)}/logs?tail=${tail}`);
   }
 }
 
